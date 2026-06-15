@@ -1,0 +1,44 @@
+<div class="post-card @(Post.ParentPostId.HasValue ? "reply" : "")">
+    <div class="post-header">
+        <strong>@Post.Author?.Name</strong>
+        <span class="role-label @(Post.Author?.Role == UserRole.Profesor ? "role-label-prof" : "role-label-alu")">
+            @(Post.Author?.Role == UserRole.Profesor ? "Profesora" : "Alumno/a")
+        </span>
+        <span class="post-date">@Post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+    </div>
+    <p class="post-content">@Post.Content</p>
+    <button class="btn-link" @onclick="ToggleReplyBox">Responder</button>
+
+    @if (_showReplyBox)
+    {
+        <div class="reply-box">
+            <textarea @bind="_replyContent" class="form-input" rows="2" placeholder="Responder a @Post.Author?.Name..."></textarea>
+            <button class="btn-primary btn-sm" @onclick="SubmitReply">Enviar</button>
+            <button class="btn-link" @onclick="ToggleReplyBox">Cancelar</button>
+        </div>
+    }
+
+    @foreach (var reply in AllPosts.Where(p => p.ParentPostId == Post.Id).OrderBy(p => p.CreatedAt))
+    {
+        <PostView Post="reply" AllPosts="AllPosts" OnReply="OnReply" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ForumPost Post { get; set; } = null!;
+    [Parameter, EditorRequired] public List<ForumPost> AllPosts { get; set; } = [];
+    [Parameter, EditorRequired] public EventCallback<(int, string)> OnReply { get; set; }
+
+    private bool _showReplyBox;
+    private string _replyContent = string.Empty;
+
+    private void ToggleReplyBox() => _showReplyBox = !_showReplyBox;
+
+    private async Task SubmitReply()
+    {
+        if (string.IsNullOrWhiteSpace(_replyContent)) return;
+        await OnReply.InvokeAsync((Post.Id, _replyContent));
+        _replyContent = string.Empty;
+        _showReplyBox = false;
+    }
+}

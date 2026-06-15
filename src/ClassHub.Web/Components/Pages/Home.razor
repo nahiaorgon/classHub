@@ -1,0 +1,32 @@
+@page "/"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>ClassHub — Inicio</PageTitle>
+
+<div class="hero">
+    <div class="hero-badge">📍 UTN · FRRE · Ingeniería y Calidad de Software</div>
+    <h1>Bienvenida a ClassHub</h1>
+    <p>Todos los recursos, libros y conversaciones de la materia en un solo lugar.<br/>Sin perder información.</p>
+</div>
+
+<h2>¿Qué querés hacer hoy?</h2>
+
+<div class="cards-grid">
+    <a href="/unidades" class="card">
+        <span class="card-icon">📂</span>
+        <h3>Unidades</h3>
+        <p>PDFs, links y materiales organizados por cada unidad temática de la materia.</p>
+    </a>
+    <a href="/libros" class="card">
+        <span class="card-icon">📖</span>
+        <h3>Biblioteca</h3>
+        <p>Todos los libros del programa. Leé online o descargalos con un click.</p>
+    </a>
+    <a href="/foro" class="card">
+        <span class="card-icon">💬</span>
+        <h3>Foro</h3>
+        <p>Hilos de discusión organizados por unidad. La info no se pierde como en Discord.</p>
+    </a>
+</div>

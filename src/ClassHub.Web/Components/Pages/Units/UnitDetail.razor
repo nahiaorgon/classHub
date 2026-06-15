@@ -1,0 +1,255 @@
+@page "/unidades/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IUnitService UnitSvc
+@inject IResourceService ResourceSvc
+@inject IConfiguration Config
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+
+<PageTitle>@(_unit?.Title ?? "Unidad") — ClassHub</PageTitle>
+
+@if (_unit is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="page-header">
+        <a href="/unidades" class="back-link">← Volver a Unidades</a>
+        <h1>@_unit.Title</h1>
+        <p>@_unit.Description</p>
+    </div>
+
+    <div class="section-tabs">
+        <a href="/foro/@_unit.Id" class="btn-secondary">💬 Foro de esta unidad</a>
+    </div>
+
+    <h2>Recursos</h2>
+
+    @if (_resources?.Count == 0)
+    {
+        <p class="empty-msg">Aún no hay recursos para esta unidad.</p>
+    }
+    else
+    {
+        var guia        = (_resources ?? []).Where(r => GetPriority(r.Title) == 0).ToList();
+        var obligatorio = (_resources ?? []).Where(r => GetPriority(r.Title) == 1).ToList();
+        var complem     = (_resources ?? []).Where(r => GetPriority(r.Title) == 2).ToList();
+
+        <div class="resource-list">
+
+            @foreach (var r in guia)
+            {
+                <div class="resource-card guia">
+                    <div class="resource-info">
+                        <div class="resource-type-badge @(r.Type == ResourceType.Pdf ? "pdf" : "link")">
+                            @(r.Type == ResourceType.Pdf ? "📄" : "🔗")
+                        </div>
+                        <div>
+                            <span class="resource-priority-badge guia">📌 Guía bibliográfica</span>
+                            <strong>@CleanTitle(r.Title)</strong>
+                            <p>@CleanDescription(r.Description)</p>
+                            <small>@r.UploadedBy?.Name — @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                        </div>
+                    </div>
+                    <div class="resource-actions">
+                        @if (r.Type == ResourceType.Link) { <a href="@r.Url" target="_blank" class="btn-primary">Abrir →</a> }
+                        else { <a href="/uploads/recursos/@Id/@r.FileName" target="_blank" class="btn-primary">Ver PDF</a> <a href="/uploads/recursos/@Id/@r.FileName" download class="btn-secondary">⬇</a> }
+                        <AuthorizeView Roles="Profesor"><button class="btn-danger" @onclick="() => DeleteResource(r.Id)">✕</button></AuthorizeView>
+                    </div>
+                </div>
+            }
+
+            @if (obligatorio.Any())
+            {
+                <div class="resource-section-label obligatorio">📕 Lectura obligatoria</div>
+                @foreach (var r in obligatorio)
+                {
+                    <div class="resource-card obligatorio">
+                        <div class="resource-info">
+                            <div class="resource-type-badge @(r.Type == ResourceType.Pdf ? "pdf" : "link")">
+                                @(r.Type == ResourceType.Pdf ? "📄" : "🔗")
+                            </div>
+                            <div>
+                                <span class="resource-priority-badge obligatorio">Obligatorio</span>
+                                <strong>@CleanTitle(r.Title)</strong>
+                                <p>@CleanDescription(r.Description)</p>
+                                <small>@r.UploadedBy?.Name — @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                            </div>
+                        </div>
+                        <div class="resource-actions">
+                            @if (r.Type == ResourceType.Link) { <a href="@r.Url" target="_blank" class="btn-primary">Abrir →</a> }
+                            else { <a href="/uploads/recursos/@Id/@r.FileName" target="_blank" class="btn-primary">Ver PDF</a> <a href="/uploads/recursos/@Id/@r.FileName" download class="btn-secondary">⬇</a> }
+                            <AuthorizeView Roles="Profesor"><button class="btn-danger" @onclick="() => DeleteResource(r.Id)">✕</button></AuthorizeView>
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (complem.Any())
+            {
+                <div class="resource-section-label complementario">📘 Material complementario</div>
+                @foreach (var r in complem)
+                {
+                    <div class="resource-card complementario">
+                        <div class="resource-info">
+                            <div class="resource-type-badge @(r.Type == ResourceType.Pdf ? "pdf" : "link")">
+                                @(r.Type == ResourceType.Pdf ? "📄" : "🔗")
+                            </div>
+                            <div>
+                                <span class="resource-priority-badge complementario">Complementario</span>
+                                <strong>@CleanTitle(r.Title)</strong>
+                                <p>@CleanDescription(r.Description)</p>
+                                <small>@r.UploadedBy?.Name — @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                            </div>
+                        </div>
+                        <div class="resource-actions">
+                            @if (r.Type == ResourceType.Link) { <a href="@r.Url" target="_blank" class="btn-primary">Abrir →</a> }
+                            else { <a href="/uploads/recursos/@Id/@r.FileName" target="_blank" class="btn-primary">Ver PDF</a> <a href="/uploads/recursos/@Id/@r.FileName" download class="btn-secondary">⬇</a> }
+                            <AuthorizeView Roles="Profesor"><button class="btn-danger" @onclick="() => DeleteResource(r.Id)">✕</button></AuthorizeView>
+                        </div>
+                    </div>
+                }
+            }
+
+        </div>
+    }
+
+    <AuthorizeView Roles="Profesor">
+        <div class="form-card">
+            <h3>➕ Agregar recurso</h3>
+
+            <div>
+                <label>Tipo</label>
+                <select @bind="_form.Type" class="form-input">
+                    <option value="Link">🔗 Link externo</option>
+                    <option value="Pdf">📄 Archivo PDF</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Título</label>
+                <input @bind="_form.Title" class="form-input" placeholder="Ej: Clase 1 – Introducción a IC" />
+            </div>
+
+            <div>
+                <label>Descripción</label>
+                <input @bind="_form.Description" class="form-input" placeholder="Breve descripción del contenido" />
+            </div>
+
+            @if (_form.Type == "Link")
+            {
+                <div>
+                    <label>URL</label>
+                    <input @bind="_form.Url" class="form-input" placeholder="https://..." />
+                </div>
+            }
+            else
+            {
+                <div>
+                    <label>Archivo PDF</label>
+                    <InputFile OnChange="OnFileSelected" accept=".pdf" class="form-input" />
+                </div>
+            }
+
+            @if (_error is not null)
+            {
+                <p class="error-msg">@_error</p>
+            }
+
+            <button class="btn-primary" @onclick="AddResource" disabled="@_saving">
+                @(_saving ? "Guardando..." : "Agregar recurso")
+            </button>
+        </div>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Unit? _unit;
+    private List<Resource>? _resources;
+    private IBrowserFile? _selectedFile;
+    private string? _error;
+    private bool _saving;
+    private ResourceForm _form = new();
+
+    private class ResourceForm
+    {
+        public string Type        { get; set; } = "Link";
+        public string Title       { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Url         { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _unit      = await UnitSvc.GetByIdAsync(Id);
+        _resources = await ResourceSvc.GetByUnitAsync(Id);
+    }
+
+    // 0 = guía (sin prefijo), 1 = obligatorio (🔴), 2 = complementario (🔵)
+    static int GetPriority(string title) =>
+        title.StartsWith("🔴") ? 1 :
+        title.StartsWith("🔵") ? 2 : 0;
+
+    // Los emojis 🔴/🔵 son surrogate pairs: 2 chars en UTF-16
+    static string CleanTitle(string title)
+    {
+        if (title.StartsWith("🔴") || title.StartsWith("🔵"))
+            return title[2..].TrimStart();
+        return title;
+    }
+
+    // Quita el prefijo "OBLIGATORIO · Tema X." de la descripción para no repetirlo
+    static string CleanDescription(string desc)
+    {
+        var idx = desc.IndexOf(" · ");
+        return idx > 0 && idx < 20 ? desc[(idx + 3)..] : desc;
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e) => _selectedFile = e.File;
+
+    private async Task AddResource()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Title)) { _error = "El título es requerido."; return; }
+
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = int.Parse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+        _saving = true;
+        try
+        {
+            if (_form.Type == "Link")
+            {
+                if (string.IsNullOrWhiteSpace(_form.Url)) { _error = "La URL es requerida."; return; }
+                await ResourceSvc.AddLinkAsync(Id, _form.Title, _form.Description, _form.Url, userId);
+            }
+            else
+            {
+                if (_selectedFile is null) { _error = "Seleccioná un archivo PDF."; return; }
+                var basePath = Path.Combine(Directory.GetCurrentDirectory(), Config["Uploads:BasePath"] ?? "uploads");
+                var dir = Path.Combine(basePath, "recursos", Id.ToString());
+                Directory.CreateDirectory(dir);
+                var safeFileName = Path.GetFileName(_selectedFile.Name);
+                var filePath = Path.Combine(dir, safeFileName);
+                await using var fs = File.Create(filePath);
+                await _selectedFile.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024).CopyToAsync(fs);
+                await ResourceSvc.AddFileAsync(Id, _form.Title, _form.Description, safeFileName, filePath, userId);
+            }
+
+            _resources = await ResourceSvc.GetByUnitAsync(Id);
+            _form = new();
+            _selectedFile = null;
+        }
+        finally { _saving = false; }
+    }
+
+    private async Task DeleteResource(int resourceId)
+    {
+        await ResourceSvc.DeleteAsync(resourceId);
+        _resources = await ResourceSvc.GetByUnitAsync(Id);
+    }
+}

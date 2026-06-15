@@ -1,0 +1,92 @@
+@page "/foro/{UnitId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IUnitService UnitSvc
+@inject IForumService ForumSvc
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Foro — @(_unit?.Title ?? "") — ClassHub</PageTitle>
+
+@if (_unit is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="page-header">
+        <a href="/foro" class="back-link">← Foro</a>
+        <h1>💬 @_unit.Title</h1>
+        <p>Unidad @_unit.Number — Hilos de discusión</p>
+    </div>
+
+    @if (_threads?.Count == 0)
+    {
+        <p class="empty-msg">Aún no hay hilos en esta unidad. ¡Creá el primero!</p>
+    }
+    else
+    {
+        <div class="thread-list">
+            @foreach (var t in _threads ?? [])
+            {
+                <a href="/foro/@UnitId/@t.Id" class="thread-card @(t.IsPinned ? "pinned" : "")">
+                    @if (t.IsPinned)
+                    {
+                        <span class="pin-badge">📌 Fijado por el profesor</span>
+                    }
+                    <div class="thread-info">
+                        <h3>@t.Title</h3>
+                        <small>
+                            Por @t.Author?.Name ·
+                            @t.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy") ·
+                            @t.Posts.Count respuesta(s)
+                        </small>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+
+    <div class="form-card">
+        <h3>✏️ Nuevo hilo</h3>
+        <div>
+            <label>Título del hilo</label>
+            <input @bind="_newTitle" class="form-input" placeholder="Ej: ¿Cuál es la diferencia entre IC e ID?" />
+        </div>
+        @if (_error is not null) { <p class="error-msg">@_error</p> }
+        <button class="btn-primary" @onclick="CreateThread" disabled="@_saving">
+            @(_saving ? "Creando..." : "Crear hilo")
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter] public int UnitId { get; set; }
+
+    private Unit? _unit;
+    private List<ForumThread>? _threads;
+    private string _newTitle = string.Empty;
+    private string? _error;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _unit    = await UnitSvc.GetByIdAsync(UnitId);
+        _threads = await ForumSvc.GetThreadsByUnitAsync(UnitId);
+    }
+
+    private async Task CreateThread()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_newTitle)) { _error = "El título no puede estar vacío."; return; }
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = int.Parse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        _saving = true;
+        try
+        {
+            await ForumSvc.CreateThreadAsync(UnitId, _newTitle, userId);
+            _threads = await ForumSvc.GetThreadsByUnitAsync(UnitId);
+            _newTitle = string.Empty;
+        }
+        finally { _saving = false; }
+    }
+}

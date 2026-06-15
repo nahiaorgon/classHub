@@ -1,0 +1,16 @@
+services:
+  classhub:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - classhub_uploads:/app/uploads
+      - classhub_db:/app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Default=Data Source=/app/classhub.db
+      - Uploads__BasePath=/app/uploads
+
+volumes:
+  classhub_uploads:
+  classhub_db:

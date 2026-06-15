@@ -1,0 +1,88 @@
+@page "/foro/{UnitId:int}/{ThreadId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IForumService ForumSvc
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>@(_thread?.Title ?? "Hilo") — ClassHub</PageTitle>
+
+@if (_thread is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="page-header">
+        <a href="/foro/@UnitId" class="back-link">← Volver al foro</a>
+        <h1>@_thread.Title</h1>
+        <small>Creado por @_thread.Author?.Name — @_thread.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+
+        <AuthorizeView Roles="Profesor">
+            <button class="btn-secondary" @onclick="TogglePin">
+                @(_thread.IsPinned ? "📌 Desfijar" : "📌 Fijar hilo")
+            </button>
+        </AuthorizeView>
+    </div>
+
+    <div class="post-list">
+        @foreach (var post in _thread.Posts.Where(p => p.ParentPostId is null).OrderBy(p => p.CreatedAt))
+        {
+            <PostView Post="post" AllPosts="_thread.Posts.ToList()" OnReply="AddReply" />
+        }
+    </div>
+
+    <div class="form-card">
+        <h3>Responder al hilo</h3>
+        <textarea @bind="_newContent" class="form-input" rows="4" placeholder="Escribí tu respuesta..."></textarea>
+        @if (_error is not null) { <p class="error-msg">@_error</p> }
+        <button class="btn-primary" @onclick="AddPost" disabled="@_saving">
+            @(_saving ? "Enviando..." : "Responder")
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter] public int UnitId { get; set; }
+    [Parameter] public int ThreadId { get; set; }
+
+    private ForumThread? _thread;
+    private string _newContent = string.Empty;
+    private string? _error;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+        => _thread = await ForumSvc.GetThreadWithPostsAsync(ThreadId);
+
+    private async Task AddPost()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_newContent)) { _error = "El mensaje no puede estar vacío."; return; }
+
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = int.Parse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+        _saving = true;
+        try
+        {
+            await ForumSvc.AddPostAsync(ThreadId, _newContent, userId);
+            _thread = await ForumSvc.GetThreadWithPostsAsync(ThreadId);
+            _newContent = string.Empty;
+        }
+        finally { _saving = false; }
+    }
+
+    private async Task AddReply((int parentId, string content) args)
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = int.Parse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        await ForumSvc.AddPostAsync(ThreadId, args.content, userId, args.parentId);
+        _thread = await ForumSvc.GetThreadWithPostsAsync(ThreadId);
+    }
+
+    private async Task TogglePin()
+    {
+        if (_thread is null) return;
+        await ForumSvc.PinThreadAsync(ThreadId, !_thread.IsPinned);
+        _thread = await ForumSvc.GetThreadWithPostsAsync(ThreadId);
+    }
+}

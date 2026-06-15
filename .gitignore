@@ -1,0 +1,25 @@
+## .NET
+**/bin/
+**/obj/
+*.user
+.vs/
+
+## Database
+*.db
+*.db-shm
+*.db-wal
+
+## Uploads (archivos subidos por usuarios, no van al repo)
+src/ClassHub.Web/uploads/
+
+## Build outputs
+publish/
+
+## Environment
+.env
+appsettings.*.json
+!appsettings.json
+
+## OS
+.DS_Store
+Thumbs.db

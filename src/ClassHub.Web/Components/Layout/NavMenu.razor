@@ -1,0 +1,57 @@
+@inject NavigationManager Nav
+
+<aside class="sidebar">
+
+    <!-- Brand -->
+    <div class="sidebar-brand">
+        <div class="brand-icon">📚</div>
+        <div class="brand-text">
+            <span class="brand-name">ClassHub</span>
+            <span class="brand-sub">UTN · FRRE</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+        <span class="nav-section-label">Principal</span>
+
+        <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+            <span class="nav-icon">🏠</span> Inicio
+        </NavLink>
+
+        <span class="nav-section-label">Recursos</span>
+
+        <NavLink class="nav-item" href="/unidades">
+            <span class="nav-icon">📂</span> Unidades
+        </NavLink>
+
+        <NavLink class="nav-item" href="/libros">
+            <span class="nav-icon">📖</span> Biblioteca
+        </NavLink>
+
+        <span class="nav-section-label">Comunidad</span>
+
+        <NavLink class="nav-item" href="/foro">
+            <span class="nav-icon">💬</span> Foro
+        </NavLink>
+    </nav>
+
+    <!-- User card -->
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar-user">
+                <div class="user-avatar">
+                    @(context.User.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                </div>
+                <div class="user-details">
+                    <div class="user-name">@context.User.Identity?.Name</div>
+                    <div class="user-role">
+                        @(context.User.IsInRole("Profesor") ? "👩‍🏫 Profesora" : "🎓 Alumno/a")
+                    </div>
+                </div>
+                <a href="/Account/Logout" class="btn-logout-icon" title="Cerrar sesión">✕</a>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+</aside>

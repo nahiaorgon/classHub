@@ -1,0 +1,106 @@
+@page
+@model ClassHub.Web.Pages.Account.LoginModel
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar sesión — ClassHub</title>
+    <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+<div class="login-page">
+
+    <!-- Decorative elements -->
+    <div class="login-dots"></div>
+    <div class="login-blob blob-1"></div>
+    <div class="login-blob blob-2"></div>
+    <div class="login-blob blob-3"></div>
+
+    <!-- Left branding panel -->
+    <div class="login-left">
+        <div class="login-brand">
+            <div class="login-brand-icon">📚</div>
+            <div>
+                <div class="login-brand-name">ClassHub</div>
+                <div class="login-brand-sub">UTN · FRRE · Ingeniería en Sistemas</div>
+            </div>
+        </div>
+
+        <h1 class="login-headline">
+            Todo el material de<br/>
+            <span>Ingeniería y Calidad</span><br/>
+            en un solo lugar.
+        </h1>
+
+        <p class="login-desc">
+            Recursos organizados por unidad, biblioteca de libros y foro de discusión.
+            Sin perder información entre mensajes.
+        </p>
+
+        <div class="login-features">
+            <div class="login-feature">
+                <div class="feature-dot"></div>
+                PDFs y links organizados por unidad
+            </div>
+            <div class="login-feature">
+                <div class="feature-dot"></div>
+                Foro con hilos persistentes por tema
+            </div>
+            <div class="login-feature">
+                <div class="feature-dot"></div>
+                Biblioteca de libros descargable
+            </div>
+        </div>
+    </div>
+
+    <!-- Right login card -->
+    <div class="login-right">
+        <div class="login-card">
+            <div>
+                <h2>Bienvenida 👋</h2>
+                <p>Ingresá con tu cuenta institucional</p>
+            </div>
+
+            <form method="post">
+
+                <div style="display:flex;flex-direction:column;gap:.4rem">
+                    <label class="login-label" asp-for="Input.Email">Email</label>
+                    <div class="login-input-wrap">
+                        <span class="input-icon">✉</span>
+                        <input asp-for="Input.Email" class="login-input" type="email"
+                               placeholder="usuario@classhub.com" autocomplete="email" />
+                    </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.75rem">
+                    <label class="login-label" asp-for="Input.Password">Contraseña</label>
+                    <div class="login-input-wrap">
+                        <span class="input-icon">🔒</span>
+                        <input asp-for="Input.Password" class="login-input" type="password"
+                               placeholder="••••••••" autocomplete="current-password" />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" style="margin-top:.5rem">
+                    Iniciar sesión →
+                </button>
+
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="login-error" style="margin-top:.75rem">⚠️ @Model.ErrorMessage</div>
+                }
+
+            </form>
+
+            <div class="login-hint">
+                <strong>Cuentas demo:</strong><br/>
+                📋 Profesora: profesor@classhub.com / profesor123<br/>
+                🎓 Alumno: alumno@classhub.com / alumno123
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

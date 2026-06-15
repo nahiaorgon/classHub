@@ -1,0 +1,140 @@
+@page "/libros"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@inject IBookService BookSvc
+@inject IConfiguration Config
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Biblioteca — ClassHub</PageTitle>
+
+<div class="page-header">
+    <a href="/" class="back-link">← Inicio</a>
+    <h1>📖 Biblioteca</h1>
+    <p>Libros del programa. Leé online o descargalos — los profesores pueden subir nuevos archivos.</p>
+</div>
+
+@if (_books is null)
+{
+    <p>Cargando...</p>
+}
+else if (_books.Count == 0)
+{
+    <p class="empty-msg">Aún no hay libros cargados.</p>
+}
+else
+{
+    <div class="book-list">
+        @foreach (var b in _books)
+        {
+            <div class="book-card">
+                <div class="book-cover">📚</div>
+                <div class="book-info">
+                    <h3>@b.Title</h3>
+                    <p class="book-author">@b.Author</p>
+                    <p>@b.Description</p>
+                    <small>Subido por @b.UploadedBy?.Name</small>
+                </div>
+                <div class="book-actions">
+                    @if (b.FilePath is not null)
+                    {
+                        <a href="/uploads/libros/@b.FileName" target="_blank" class="btn-primary">Leer PDF</a>
+                        <a href="/uploads/libros/@b.FileName" download class="btn-secondary">⬇ Descargar</a>
+                    }
+                    <AuthorizeView Roles="Profesor">
+                        <button class="btn-danger" @onclick="() => DeleteBook(b.Id)">✕</button>
+                    </AuthorizeView>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<AuthorizeView Roles="Profesor">
+    <div class="form-card">
+        <h3>📤 Subir libro</h3>
+
+        <div>
+            <label>Título</label>
+            <input @bind="_form.Title" class="form-input" placeholder="Ej: Continuous Delivery" />
+        </div>
+
+        <div>
+            <label>Autor</label>
+            <input @bind="_form.Author" class="form-input" placeholder="Ej: Jez Humble & David Farley" />
+        </div>
+
+        <div>
+            <label>Descripción</label>
+            <textarea @bind="_form.Description" class="form-input" rows="3"
+                      placeholder="¿De qué trata el libro y para qué unidades es útil?"></textarea>
+        </div>
+
+        <div>
+            <label>Archivo PDF</label>
+            <InputFile OnChange="OnFileSelected" accept=".pdf" class="form-input" />
+        </div>
+
+        @if (_error is not null)
+        {
+            <p class="error-msg">@_error</p>
+        }
+
+        <button class="btn-primary" @onclick="UploadBook" disabled="@_saving">
+            @(_saving ? "Subiendo..." : "Subir libro")
+        </button>
+    </div>
+</AuthorizeView>
+
+@code {
+    private List<Book>? _books;
+    private IBrowserFile? _selectedFile;
+    private string? _error;
+    private bool _saving;
+    private BookForm _form = new();
+
+    private class BookForm
+    {
+        public string Title       { get; set; } = string.Empty;
+        public string Author      { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+        => _books = await BookSvc.GetAllAsync();
+
+    private void OnFileSelected(InputFileChangeEventArgs e) => _selectedFile = e.File;
+
+    private async Task UploadBook()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Title)) { _error = "El título es requerido."; return; }
+        if (_selectedFile is null) { _error = "Seleccioná un archivo PDF."; return; }
+
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var userId = int.Parse(authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+        _saving = true;
+        try
+        {
+            var basePath = Path.Combine(Directory.GetCurrentDirectory(), Config["Uploads:BasePath"] ?? "uploads");
+            var dir = Path.Combine(basePath, "libros");
+            Directory.CreateDirectory(dir);
+            var safeFileName = Path.GetFileName(_selectedFile.Name);
+            var filePath = Path.Combine(dir, safeFileName);
+            await using var fs = File.Create(filePath);
+            await _selectedFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024).CopyToAsync(fs);
+            await BookSvc.AddAsync(_form.Title, _form.Author, _form.Description, safeFileName, filePath, userId);
+            _books = await BookSvc.GetAllAsync();
+            _form = new();
+            _selectedFile = null;
+        }
+        finally { _saving = false; }
+    }
+
+    private async Task DeleteBook(int id)
+    {
+        await BookSvc.DeleteAsync(id);
+        _books = await BookSvc.GetAllAsync();
+    }
+}

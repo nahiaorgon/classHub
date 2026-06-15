@@ -1,0 +1,37 @@
+@page "/unidades"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IUnitService UnitSvc
+
+<PageTitle>Unidades — ClassHub</PageTitle>
+
+<div class="page-header">
+    <a href="/" class="back-link">← Inicio</a>
+    <h1>📂 Unidades</h1>
+    <p>Seleccioná una unidad para ver sus recursos y acceder al foro.</p>
+</div>
+
+@if (_units is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="cards-grid">
+        @foreach (var u in _units)
+        {
+            <a href="/unidades/@u.Id" class="card">
+                <span class="unit-number">Unidad @u.Number</span>
+                <h3>@u.Title</h3>
+                <p>@u.Description</p>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    private List<Unit>? _units;
+
+    protected override async Task OnInitializedAsync()
+        => _units = await UnitSvc.GetAllAsync();
+}
