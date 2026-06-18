@@ -24,7 +24,7 @@ public static class DataSeeder
         };
         db.Users.AddRange(profesor, alumno);
 
-        var u1 = new Unit { Number = 1, Title = "Ingeniería de Software en Contexto",                    Description = "Introducción a la IS, historia, crisis del software, modelos de proceso y ciclos de vida." };
+        var u1 = new Unit { Number = 1, Title = "Cambiado a literal diferente - Jueves 18/06",                    Description = "Introducción a la IS, historia, crisis del software, modelos de proceso y ciclos de vida." };
         var u2 = new Unit { Number = 2, Title = "Gestión del Software como producto",                    Description = "Gestión de proyectos, estimación, planificación, métricas y control de calidad." };
         var u3 = new Unit { Number = 3, Title = "Gestión Ágil de Proyectos",                             Description = "Marcos ágiles (Scrum, Kanban), sprints, historias de usuario e integración continua." };
         var u4 = new Unit { Number = 4, Title = "Aseguramiento de Calidad del Producto del Software",    Description = "Testing, revisiones, métricas de calidad, SonarQube y estándares ISO." };

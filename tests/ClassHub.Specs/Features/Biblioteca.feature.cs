@@ -152,8 +152,8 @@ namespace ClassHub.Specs.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 15
-    await testRunner.GivenAsync("el profesor con id 10 agrega el \"Clean Code\" de \"Robert C. Martin\" con archivo \"c" +
-                        "lean_code.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("el profesor con id 10 agrega el libro \"Clean Code\" de \"Robert C. Martin\" con arch" +
+                        "ivo \"clean_code.pdf\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 16
     await testRunner.AndAsync("el profesor con id 10 agrega el libro \"The Pragmatic Programmer\" de \"Hunt & Thoma" +
